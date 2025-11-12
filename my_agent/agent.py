@@ -1,5 +1,6 @@
 from google.adk.agents.llm_agent import Agent
 import os
+import google.generativeai as genai
 
 def read_code_file(file_path: str) -> str:
     """Reads code from a file."""
@@ -7,11 +8,35 @@ def read_code_file(file_path: str) -> str:
         return f.read()
 
 def generate_md_doc(code: str, output_path: str) -> dict:
-    """Generates Markdown doc and writes to file."""
-    # Placeholder: In practice, use Gemini to analyze code here
-    doc_content = f"# Code Documentation\n\n## Analysis\n{code}\n\n## Explanation\nThis code performs..."
+    """Generates Markdown doc using Gemini API and writes to file."""
+    # Configure Gemini API (assumes GEMINI_API_KEY in environment)
+    genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
+    
+    # Initialize the model
+    model = genai.GenerativeModel('gemini-2.5-flash')
+    
+    # Craft a detailed prompt for comprehensive documentation
+    prompt = f"""
+    Generate detailed Markdown documentation for the following code. Structure it as follows:
+    - # Code Documentation
+    - ## Analysis: Provide an overview of the file's purpose and key components.
+    - ## Classes: Break down each class with attributes and methods.
+    - ## Explanation: Offer a full, step-by-step explanation of how the code works, including logic, parameters, and interactions.
+    
+    Ensure the documentation is complete, accurate, and professional.
+    
+    Code:
+    {code}
+    """
+    
+    # Generate content
+    response = model.generate_content(prompt)
+    doc_content = response.text
+    
+    # Write to file
     with open(output_path, 'w') as f:
         f.write(doc_content)
+    
     return {"status": "success", "output": output_path}
 
 root_agent = Agent(
